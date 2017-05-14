@@ -1,11 +1,13 @@
 #include "Config.h"
 #include "MidiManager.h"
 #include "Lfo.h"
+#include "AnalogIns.h"
 
 void setup() {
   config_init();
   midi_init();
   lfo_init();
+  ain_init();
 }
 
 
@@ -21,5 +23,8 @@ void loop() {
         midi_stateMachine(midiByte);
     }
     //_______________    
+
+    ain_state_machine();
+
   }
 }
