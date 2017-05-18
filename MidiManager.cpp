@@ -3,7 +3,7 @@
 #include "Config.h"
 #include "MidiManager.h"
 
-const unsigned short NOTES_TABLE_PWM[61] = {1003,990,975,960,944,927,909,891,871,849,827,803,778,753,723,693,661,627,592,554,514,471,426,379};
+const unsigned short NOTES_TABLE_PWM[61] = {953,942,936,926,916,903,893,882,866,850,838,822,810,790,772,753,734,707,685,659,635,611,580,550,512,475,446,405,366,316,270,929,919,909,900,888,873};
 
 MidiInfo midiInfo;
 byte midiStateMachine=MIDI_STATE_IDLE;
@@ -16,6 +16,16 @@ void midi_init(void)
 {
   midiStateMachine=MIDI_STATE_IDLE;
   keysActivatedCounter=0;  
+
+  //debug calibracion
+  /*
+  digitalWrite(PIN_VCO1_SCALE, HIGH);
+  digitalWrite(PIN_VCO2_SCALE, HIGH);
+  unsigned short pwmVal = NOTES_TABLE_PWM[36];
+  OCR1A = pwmVal;    
+  OCR1B = pwmVal;  
+  */
+
 }
 
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
@@ -34,7 +44,7 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
             if(pMidiInfo->note>=36 && pMidiInfo->note<96)
             {
               unsigned short pwmVal = NOTES_TABLE_PWM[pMidiInfo->note-36];
-              if(pMidiInfo->note<60)
+              if(pMidiInfo->note<66)
               {
                 digitalWrite(PIN_VCO1_SCALE, LOW);
                 digitalWrite(PIN_VCO2_SCALE, LOW);
