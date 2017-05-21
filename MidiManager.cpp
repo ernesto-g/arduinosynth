@@ -21,13 +21,13 @@ void midi_init(void)
 
   voicesMode = MIDI_VOICES_MODE_DUAL;
   //debug calibration
-  /*
+  
   digitalWrite(PIN_VCO1_SCALE, HIGH);
   digitalWrite(PIN_VCO2_SCALE, HIGH);
-  unsigned short pwmVal = NOTES_TABLE_PWM[60];
+  unsigned short pwmVal = NOTES_TABLE_PWM[30];
   OCR1A = pwmVal;    
   OCR1B = pwmVal;  
-  */
+  
 
 }
 

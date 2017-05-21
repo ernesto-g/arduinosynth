@@ -10,7 +10,7 @@ void config_init(void)
   //_____________________________________
 
 
-  // Configure TIMER1 for PWM
+  // Configure TIMER1 for PWM (VCO1 and VCO2 Control Voltage)
   DDRB |= (1 << DDB1) | (1 << DDB2);
   TCCR1A =
       (1 << COM1A1) | (1 << COM1B1) |
@@ -27,6 +27,22 @@ void config_init(void)
   ICR1 = 1024;
   //__________________________
 
+
+  // Configure TIMER2 for PWM (LFO output)
+  TCCR2A =
+      (1 << COM2A1) | (1 << COM2B1) |
+      // Fast PWM mode.
+      (1 << WGM21);
+  TCCR2B =
+      // Fast PWM mode.
+      (1 << WGM22) |
+      // No clock prescaling (fastest possible
+      // freq).
+      (1 << CS20);
+  OCR2A = 0;
+  OCR2B = 0;
+  //ICR2 = 255;
+  //__________________________
   
   // Configure TIMER0 for DDS interrupt
   cli();//stop interrupts
@@ -35,7 +51,7 @@ void config_init(void)
   TCCR0B = 0;// same for TCCR0B
   TCNT0  = 0;//initialize counter value to 0
   // set compare match register for 2khz increments
-  OCR0A = 31;// = (16*10^6) / (2000*64) - 1 (must be <256)
+  OCR0A = 31; // 133uS
   // turn on CTC mode
   TCCR0A |= (1 << WGM01);
   // Set CS01 and CS00 bits for 64 prescaler
