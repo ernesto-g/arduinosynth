@@ -29,13 +29,12 @@ void config_init(void)
 
 
   // Configure TIMER2 for PWM (LFO output)
+  DDRD |= (1 << DDD3);
   TCCR2A =
-      (1 << COM2A1) | (1 << COM2B1) |
+      (1 << COM2B1) |
       // Fast PWM mode.
-      (1 << WGM21);
+      (1 << WGM20) | (1 << WGM21);
   TCCR2B =
-      // Fast PWM mode.
-      (1 << WGM22) |
       // No clock prescaling (fastest possible
       // freq).
       (1 << CS20);
@@ -51,7 +50,7 @@ void config_init(void)
   TCCR0B = 0;// same for TCCR0B
   TCNT0  = 0;//initialize counter value to 0
   // set compare match register for 2khz increments
-  OCR0A = 31; // 133uS
+  OCR0A = 150; //31; // 133uS
   // turn on CTC mode
   TCCR0A |= (1 << WGM01);
   // Set CS01 and CS00 bits for 64 prescaler
