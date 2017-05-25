@@ -21,3 +21,7 @@ typedef struct S_MidiInfo {
 void midi_stateMachine(byte midiByte);
 void midi_init(void);
 
+void midi_setOctaveVco1(byte octave);
+void midi_setOctaveVco2(byte octave);
+void midi_setTuneVco1(signed int tuneValue);
+void midi_setTuneVco2(signed int tuneValue);

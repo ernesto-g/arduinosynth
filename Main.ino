@@ -2,12 +2,14 @@
 #include "MidiManager.h"
 #include "Lfo.h"
 #include "AnalogIns.h"
+#include "FrontPanel.h"
 
 void setup() {
   config_init();
   midi_init();
   lfo_init();
   ain_init();
+  frontp_init();
 }
 
 
@@ -25,6 +27,8 @@ void loop() {
     //_______________    
 
     ain_state_machine();
+
+    frontp_state_machine();
 
   }
 }

@@ -5,4 +5,6 @@
 
 void ain_init(void);
 void ain_state_machine(void);
+uint16_t* ain_getValues(void);
+uint8_t ain_isReady(void);
 

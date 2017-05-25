@@ -3,15 +3,17 @@
 #include <HardwareSerial.h>
 #include "AnalogIns.h"
 
-static uint16_t inputsValue[6];
+static uint16_t inputsValue[8];
 static uint8_t currentChn;
 static uint8_t state;
+static uint8_t isReady;
 
 void ain_init(void)
 {
   currentChn=0;
   analogRead(0); // read for initialization
   state = ANALOG_STATE_IDLE;
+  isReady=0;
 }
 
 void ain_state_machine(void)
@@ -54,13 +56,24 @@ void ain_state_machine(void)
         //Serial.print("\r\n");
                 
         currentChn++;
-        if(currentChn>=6)
+        if(currentChn>=8){
           currentChn=0;
+          isReady=1;
+        }
         state = ANALOG_STATE_IDLE;  
         break;
       }
     }
 }
 
+uint16_t* ain_getValues(void)
+{
+  return inputsValue;
+}
+
+uint8_t ain_isReady(void)
+{
+  return isReady;
+}
 
 
