@@ -65,7 +65,9 @@ void config_init(void)
   pinMode(PIN_VCO1_SCALE,OUTPUT);
   pinMode(PIN_VCO2_SCALE,OUTPUT);
   pinMode(PIN_GATE_SIGNAL,OUTPUT);
-  digitalWrite(PIN_GATE_SIGNAL,LOW);
+  pinMode(PIN_TRIGGER_SIGNAL,OUTPUT);
+  digitalWrite(PIN_GATE_SIGNAL,HIGH);
+  digitalWrite(PIN_TRIGGER_SIGNAL,LOW);
   //__________
    
  }

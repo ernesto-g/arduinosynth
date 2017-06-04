@@ -19,16 +19,14 @@ void midi_init(void)
   midiStateMachine=MIDI_STATE_IDLE;
   keysActivatedCounter=0;  
 
-  voicesMode = MIDI_VOICES_MODE_DUAL;
-  //debug calibration
+  voicesMode = MIDI_VOICES_MODE_MONO;
   
   digitalWrite(PIN_VCO1_SCALE, HIGH);
   digitalWrite(PIN_VCO2_SCALE, HIGH);
+  digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
   unsigned short pwmVal = NOTES_TABLE_PWM[30];
   OCR1A = pwmVal;    
   OCR1B = pwmVal;  
-  
-
 }
 
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
@@ -40,71 +38,55 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
             // NOTE ON 
             if(pMidiInfo->note>=36 && pMidiInfo->note<=96)
             {
+              digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
+              digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
+              
               keysActivatedCounter++;
-              unsigned short pwmVal = NOTES_TABLE_PWM[pMidiInfo->note-36];
+              unsigned char noteNumberVco1 = pMidiInfo->note;
+              unsigned char noteNumberVco2 = pMidiInfo->note;
+              
+              unsigned short pwmValVco1 = NOTES_TABLE_PWM[noteNumberVco1-36];
+              unsigned short pwmValVco2 = NOTES_TABLE_PWM[noteNumberVco2-36];
 
               if(voicesMode==MIDI_VOICES_MODE_MONO)
               { 
                 // Single voice mode           
-                if(pMidiInfo->note<=66)
+                if(noteNumberVco1<=66)
                 {
                   digitalWrite(PIN_VCO1_SCALE, LOW);
-                  digitalWrite(PIN_VCO2_SCALE, LOW);
                 }
                 else
                 {
                   digitalWrite(PIN_VCO1_SCALE, HIGH);
+                }
+                if(noteNumberVco2<=66)
+                {
+                  digitalWrite(PIN_VCO2_SCALE, LOW);
+                }
+                else
+                {
                   digitalWrite(PIN_VCO2_SCALE, HIGH);                
                 }
-                OCR1A = pwmVal;    
-                OCR1B = pwmVal;  
+                OCR1A = pwmValVco1;    
+                OCR1B = pwmValVco2;  
               }
               else
               {
                 // Two voices mode
-                if(keysActivatedCounter==1)
-                {
-                  // First voice
-                  if(pMidiInfo->note<=66)
-                  {
-                    digitalWrite(PIN_VCO1_SCALE, LOW);
-                  }
-                  else
-                  {
-                    digitalWrite(PIN_VCO1_SCALE, HIGH);
-                  }
-                  OCR1A = pwmVal;                     
-                }
-                else
-                {
-                  // second voice
-                  if(pMidiInfo->note<=66)
-                  {
-                    digitalWrite(PIN_VCO2_SCALE, LOW);
-                  }
-                  else
-                  {
-                    digitalWrite(PIN_VCO2_SCALE, HIGH);
-                  }
-                  OCR1B = pwmVal;                     
-                }
+                
               }
               
-              digitalWrite(PIN_GATE_SIGNAL,HIGH);
+              
+              digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
             }
         }
         else if(pMidiInfo->cmd==MIDI_CMD_NOTE_OFF)
         {
           // NOTE OFF
-            //Serial.print("\r\nNOTE OF:");
-            //Serial.print(pMidiInfo->note,DEC);
-            //Serial.print(" vel:");            
-            //Serial.print(pMidiInfo->vel,DEC);
-            //Serial.print("\r\n");
-            if(keysActivatedCounter>0)            
+          if(keysActivatedCounter>0)            
               keysActivatedCounter--;
-            if(keysActivatedCounter==0)
-              digitalWrite(PIN_GATE_SIGNAL,LOW);
+          if(keysActivatedCounter==0)
+              digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
         }
         else
         {
