@@ -15,7 +15,7 @@ unsigned char voicesMode;
 
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo);
 static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber);
-static unsigned short changeTune(signed int currentTune,unsigned char noteNumber);
+static unsigned short changeTune(signed int currentTune,unsigned char noteNumber,unsigned char* pScale);
 
 static unsigned char currentOctaveVco1;
 static unsigned char currentOctaveVco2;
@@ -67,16 +67,20 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               
               unsigned short pwmValVco1; //= NOTES_TABLE_PWM[noteNumberVco1-36];
               unsigned short pwmValVco2; //= NOTES_TABLE_PWM[noteNumberVco2-36];
+              unsigned char scaleVco1;
+              unsigned char scaleVco2;
+              
 
               // change tune
-              pwmValVco1 = changeTune(currentTuneVco1,noteNumberVco1);
-              pwmValVco2 = changeTune(currentTuneVco2,noteNumberVco2);              
+              pwmValVco1 = changeTune(currentTuneVco1,noteNumberVco1,&scaleVco1);
+              pwmValVco2 = changeTune(currentTuneVco2,noteNumberVco2,&scaleVco2);              
               //____________
 
               if(voicesMode==MIDI_VOICES_MODE_MONO)
               { 
                 // Single voice mode           
-                if(noteNumberVco1<=66)
+                //if(noteNumberVco1<=66)
+                if(scaleVco1==0)
                 {
                   digitalWrite(PIN_VCO1_SCALE, LOW);
                 }
@@ -84,7 +88,8 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
                 {
                   digitalWrite(PIN_VCO1_SCALE, HIGH);
                 }
-                if(noteNumberVco2<=66)
+                //if(noteNumberVco2<=66)
+                if(scaleVco2==0)                
                 {
                   digitalWrite(PIN_VCO2_SCALE, LOW);
                 }
@@ -255,11 +260,27 @@ static unsigned char changeOctave(unsigned char currentOctave, unsigned char not
 }
 
 
-static unsigned short changeTune(signed int currentTune,unsigned char noteNumber)
+static unsigned short changeTune(signed int currentTune,unsigned char noteNumber,unsigned char* pScale)
 {
+      if(noteNumber<=66)
+        *pScale=0;
+      else
+        *pScale=1;
+      
       unsigned char n = noteNumber-36;
-      signed long pwmP5 =  NOTES_TABLE_PWM[n+5];
-      signed long pwm0 =  NOTES_TABLE_PWM[n];
-      return  ((unsigned short)( ( ((signed long)currentTune) * (pwmP5 - pwm0)) / 512 )) + pwm0;      
+      signed long pwmP4;// =  NOTES_TABLE_PWM[n+4];
+      signed long pwm0; // =  NOTES_TABLE_PWM[n];
+
+      if(n<=26 || n>=31 ) // same scale. calculate delta for 4 notes deviation
+      {
+        pwmP4 =  NOTES_TABLE_PWM[n+4];
+        pwm0 =  NOTES_TABLE_PWM[n];
+      }
+      else
+      { // the note is in the middle of the pwm scale, adjacent delta is used
+        pwmP4 =  NOTES_TABLE_PWM[30];
+        pwm0 =  NOTES_TABLE_PWM[26];        
+      }
+      return  ((unsigned short)( ( ((signed long)currentTune) * (pwmP4 - pwm0)) / 512 )) + NOTES_TABLE_PWM[n];      
 }
 
