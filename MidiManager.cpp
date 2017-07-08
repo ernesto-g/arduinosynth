@@ -27,6 +27,7 @@ static signed int currentTuneVco2;
 static unsigned int currentRepeatValue;
 static unsigned char repeatRunning;
 
+
 volatile unsigned int repeatCounter; // incremented in lfo interrupt
 
 void midi_init(void)
@@ -71,11 +72,10 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               noteNumberVco2 = changeOctave(currentOctaveVco2,pMidiInfo->note);
               //______________
               
-              unsigned short pwmValVco1; //= NOTES_TABLE_PWM[noteNumberVco1-36];
-              unsigned short pwmValVco2; //= NOTES_TABLE_PWM[noteNumberVco2-36];
+              unsigned short pwmValVco1;
+              unsigned short pwmValVco2;
               unsigned char scaleVco1;
-              unsigned char scaleVco2;
-              
+              unsigned char scaleVco2;              
 
               // change tune
               pwmValVco1 = changeTune(currentTuneVco1,noteNumberVco1,&scaleVco1);
@@ -85,7 +85,6 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               if(voicesMode==MIDI_VOICES_MODE_MONO)
               { 
                 // Single voice mode           
-                //if(noteNumberVco1<=66)
                 if(scaleVco1==0)
                 {
                   digitalWrite(PIN_VCO1_SCALE, LOW);
@@ -94,7 +93,6 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
                 {
                   digitalWrite(PIN_VCO1_SCALE, HIGH);
                 }
-                //if(noteNumberVco2<=66)
                 if(scaleVco2==0)                
                 {
                   digitalWrite(PIN_VCO2_SCALE, LOW);
@@ -123,19 +121,6 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               keysActivatedCounter--;
           if(keysActivatedCounter==0)
               digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
-
-          // debug
-          /*
-          int k;
-          for(k=0; k<8;k++){
-            Serial.print("Valor entrada ");
-            Serial.print(k,DEC);
-            Serial.print(": ");
-            uint16_t* values = ain_getValues();
-            Serial.print(values[k],DEC);
-            Serial.print("\r\n");
-          }*/
-
         }
         else
         {
@@ -191,7 +176,7 @@ void midi_repeatManager(void)
     }
     else
     {
-      if(repeatRunning==1 && repeatCounter>=(4 + (currentRepeatValue/8) ) ) // wait 250ms to disable trigger and gate
+      if(repeatRunning==1 && repeatCounter>=(4 + (currentRepeatValue/8) ) ) // wait (100ms + a proportional time) to disable trigger and gate
       {
         digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
         outs_set(OUT_REPEAT,0);      
@@ -240,7 +225,8 @@ void midi_setRepeatValue(unsigned int repeatVal)
   }
   else
   {
-      currentRepeatValue= (repeatVal-100)/6 + 5; // currentRepeatValue between 5 and 160 (125ms to 4s)
+      repeatVal = 1023 - repeatVal; // invert value
+      currentRepeatValue= (repeatVal+30)/6 ; // currentRepeatValue between 5 and 158 (125ms to 3.9s)
   }
 }
 

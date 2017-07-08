@@ -379,6 +379,10 @@ void lfo_setFrequencyMultiplier(unsigned int fm)
     freqMultiplier = pgm_read_byte_near(FMULTI_POT_TABLE + (fm>>2) );    
 }
 
+void lfo_reset(void)
+{
+    lfoCounter=0;
+}
 
 
 
