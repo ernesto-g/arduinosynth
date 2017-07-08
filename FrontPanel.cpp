@@ -67,7 +67,7 @@ static void setValueToManager(unsigned char controlIndex)
       }
       case FRONTPANEL_ANALOG_INPUT_LFO_SYNC_ON_OFF:
       {
-        
+        midi_setLfoSync(values[FRONTPANEL_ANALOG_INPUT_LFO_SYNC_ON_OFF]);
         break;
       }
       case FRONTPANEL_ANALOG_INPUT_VCO1_FINE_TUNE:

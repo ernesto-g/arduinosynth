@@ -4,6 +4,7 @@
 #include "MidiManager.h"
 #include "AnalogIns.h"
 #include "Outs.h"
+#include "Lfo.h"
 
 const unsigned short NOTES_TABLE_PWM[61+5] = {953,942,936,926,916,903,893,882,866,850,838,822,810,790,772,753,734,707,685,659,635,611,580,550,512,475,446,405,366,316,270,929,919,909,900,888,873,
 859,844,831,815,796,777,760,738,717,696,670,648,620,590,560,530,493,457,420,382,335,290,245,200,160,120,80,40,0};
@@ -26,7 +27,7 @@ static signed int currentTuneVco1;
 static signed int currentTuneVco2;
 static unsigned int currentRepeatValue;
 static unsigned char repeatRunning;
-
+static unsigned char lfoIsSynced;
 
 volatile unsigned int repeatCounter; // incremented in lfo interrupt
 
@@ -46,6 +47,7 @@ void midi_init(void)
 
   repeatCounter = 0;
   repeatRunning=0;
+  lfoIsSynced = 0;
 
   showMode();
 }
@@ -62,7 +64,9 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
               digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
 
-                            
+              if(lfoIsSynced)
+                lfo_reset();
+                                            
               keysActivatedCounter++;
               unsigned char noteNumberVco1;
               unsigned char noteNumberVco2;
@@ -228,6 +232,14 @@ void midi_setRepeatValue(unsigned int repeatVal)
       repeatVal = 1023 - repeatVal; // invert value
       currentRepeatValue= (repeatVal+30)/6 ; // currentRepeatValue between 5 and 158 (125ms to 3.9s)
   }
+}
+
+void midi_setLfoSync(unsigned int val)
+{
+    if(val<512)
+      lfoIsSynced=0;
+    else
+      lfoIsSynced=1;
 }
 
 static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber)
