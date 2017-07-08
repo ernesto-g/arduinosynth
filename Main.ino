@@ -3,9 +3,11 @@
 #include "Lfo.h"
 #include "AnalogIns.h"
 #include "FrontPanel.h"
+#include "Outs.h"
 
 void setup() {
   config_init();
+  outs_init();
   midi_init();
   lfo_init();
   ain_init();
@@ -31,6 +33,8 @@ void loop() {
     frontp_state_machine();
 
     midi_repeatManager();
+
+    outs_stateMachine();
 
   }
 }

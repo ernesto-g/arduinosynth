@@ -68,6 +68,11 @@ void config_init(void)
   pinMode(PIN_TRIGGER_SIGNAL,OUTPUT);
   digitalWrite(PIN_GATE_SIGNAL,HIGH);
   digitalWrite(PIN_TRIGGER_SIGNAL,LOW);
+
+  pinMode(PIN_OUTS_DATA,OUTPUT);
+  pinMode(PIN_OUTS_CLK,OUTPUT);
+  pinMode(PIN_OUTS_STROBE,OUTPUT);
+
   //__________
    
  }

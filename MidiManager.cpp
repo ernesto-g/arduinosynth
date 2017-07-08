@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "MidiManager.h"
 #include "AnalogIns.h"
+#include "Outs.h"
 
 const unsigned short NOTES_TABLE_PWM[61+5] = {953,942,936,926,916,903,893,882,866,850,838,822,810,790,772,753,734,707,685,659,635,611,580,550,512,475,446,405,366,316,270,929,919,909,900,888,873,
 859,844,831,815,796,777,760,738,717,696,670,648,620,590,560,530,493,457,420,382,335,290,245,200,160,120,80,40,0};
@@ -16,6 +17,8 @@ unsigned char voicesMode;
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo);
 static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber);
 static unsigned short changeTune(signed int currentTune,unsigned char noteNumber,unsigned char* pScale);
+static void showMode(void);
+
 
 static unsigned char currentOctaveVco1;
 static unsigned char currentOctaveVco2;
@@ -42,6 +45,8 @@ void midi_init(void)
 
   repeatCounter = 0;
   repeatRunning=0;
+
+  showMode();
 }
 
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
@@ -55,7 +60,8 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
             {
               digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
               digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
-              
+
+                            
               keysActivatedCounter++;
               unsigned char noteNumberVco1;
               unsigned char noteNumberVco2;
@@ -180,13 +186,15 @@ void midi_repeatManager(void)
         repeatCounter=0;
         digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
         digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
+        outs_set(OUT_REPEAT,1);
         repeatRunning=1;
     }
     else
     {
       if(repeatRunning==1 && repeatCounter>=(4 + (currentRepeatValue/8) ) ) // wait 250ms to disable trigger and gate
       {
-        digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0      
+        digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
+        outs_set(OUT_REPEAT,0);      
         repeatRunning=0;
         if(keysActivatedCounter==0)
             digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
@@ -195,7 +203,8 @@ void midi_repeatManager(void)
   }
   else if(repeatRunning==1)
   {
-        digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0      
+        digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
+        outs_set(OUT_REPEAT,0);      
         repeatRunning=0;
         if(keysActivatedCounter==0)
             digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0    
@@ -282,5 +291,29 @@ static unsigned short changeTune(signed int currentTune,unsigned char noteNumber
         pwm0 =  NOTES_TABLE_PWM[26];        
       }
       return  ((unsigned short)( ( ((signed long)currentTune) * (pwmP4 - pwm0)) / 512 )) + NOTES_TABLE_PWM[n];      
+}
+
+static void showMode(void)
+{
+    outs_set(OUT_MODE0,0);
+    outs_set(OUT_MODE1,0);
+    outs_set(OUT_MODE2,0);
+    outs_set(OUT_MODE3,0);
+
+    switch(voicesMode)
+    {
+      case 0:
+        outs_set(OUT_MODE0,1);
+        break;
+      case 1:
+        outs_set(OUT_MODE1,1);
+        break;
+      case 2:
+        outs_set(OUT_MODE2,1);
+        break;
+      case 3:
+        outs_set(OUT_MODE3,1);
+        break;
+    }  
 }
 

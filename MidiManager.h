@@ -16,6 +16,12 @@
 #define OCTAVE_PLUS_ONE   3
 #define OCTAVE_PLUS_TWO   4
 
+#define OUT_MODE0     0
+#define OUT_MODE1     1
+#define OUT_MODE2     2
+#define OUT_MODE3     3
+#define OUT_REPEAT    4
+
 
 
 typedef struct S_MidiInfo {
