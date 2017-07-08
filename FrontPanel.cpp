@@ -62,6 +62,12 @@ static void setValueToManager(unsigned char controlIndex)
       }
       case FRONTPANEL_ANALOG_INPUT_REPEAT_SPEED:
       {
+        midi_setRepeatValue(values[FRONTPANEL_ANALOG_INPUT_REPEAT_SPEED]);
+        break;
+      }
+      case FRONTPANEL_ANALOG_INPUT_LFO_SYNC_ON_OFF:
+      {
+        
         break;
       }
       case FRONTPANEL_ANALOG_INPUT_VCO1_FINE_TUNE:

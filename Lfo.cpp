@@ -312,6 +312,9 @@ static volatile unsigned char waveType=LFO_WAVE_TYPE_SINE;
 static volatile unsigned int lfoCounter=0;
 static volatile unsigned int freqMultiplier;
 
+extern volatile unsigned int repeatCounter;
+static volatile unsigned int repeatCounterMultiplier;
+
 ISR(TIMER0_COMPA_vect)
 {
   lfoCounter+=freqMultiplier;
@@ -339,6 +342,17 @@ ISR(TIMER0_COMPA_vect)
   }
   //Serial.print(OCR2A,DEC);
   //Serial.print("\r\n");
+
+  
+  repeatCounterMultiplier++;
+  if(repeatCounterMultiplier>=40) // 25ms
+  {
+    repeatCounterMultiplier=0;
+    repeatCounter++;
+  }
+
+  //repeatCounter++;
+  
 }
 
 
@@ -348,6 +362,8 @@ void lfo_init(void)
     waveType=LFO_WAVE_TYPE_SINE;
     lfoCounter=0;
     freqMultiplier=30;  // from 1 to 60 for 0.5Hz to 30Hz
+    repeatCounterMultiplier=0;
+    repeatCounter=0;
 }
 
 void lfo_setWaveType(unsigned char type)

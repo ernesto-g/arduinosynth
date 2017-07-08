@@ -30,5 +30,7 @@ void loop() {
 
     frontp_state_machine();
 
+    midi_repeatManager();
+
   }
 }

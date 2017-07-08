@@ -21,7 +21,10 @@ static unsigned char currentOctaveVco1;
 static unsigned char currentOctaveVco2;
 static signed int currentTuneVco1;
 static signed int currentTuneVco2;
+static unsigned int currentRepeatValue;
+static unsigned char repeatRunning;
 
+volatile unsigned int repeatCounter; // incremented in lfo interrupt
 
 void midi_init(void)
 {
@@ -36,6 +39,9 @@ void midi_init(void)
   unsigned short pwmVal = NOTES_TABLE_PWM[30];
   OCR1A = pwmVal;    
   OCR1B = pwmVal;  
+
+  repeatCounter = 0;
+  repeatRunning=0;
 }
 
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
@@ -160,6 +166,38 @@ void midi_stateMachine(byte midiByte)
   
 }
 
+void midi_repeatManager(void)
+{
+  if(currentRepeatValue>0)
+  {    
+    if(repeatCounter>=currentRepeatValue)
+    {
+        repeatCounter=0;
+        digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
+        digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
+        repeatRunning=1;
+    }
+    else
+    {
+      if(repeatRunning==1 && repeatCounter>=(4 + (currentRepeatValue/8) ) ) // wait 250ms to disable trigger and gate
+      {
+        digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0      
+        repeatRunning=0;
+        if(keysActivatedCounter==0)
+            digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
+      }
+    }
+  }
+  else if(repeatRunning==1)
+  {
+        digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0      
+        repeatRunning=0;
+        if(keysActivatedCounter==0)
+            digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0    
+  }
+
+}
+
 
 void midi_setOctaveVco1(byte octave)
 {
@@ -178,6 +216,18 @@ void midi_setTuneVco1(signed int tuneValue)
 void midi_setTuneVco2(signed int tuneValue)
 {
     currentTuneVco2 = tuneValue;
+}
+
+void midi_setRepeatValue(unsigned int repeatVal)
+{
+  if(repeatVal<100)
+  {
+      currentRepeatValue=0;  
+  }
+  else
+  {
+      currentRepeatValue= (repeatVal-100)/6 + 5; // currentRepeatValue between 5 and 160 (125ms to 4s)
+  }
 }
 
 static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber)
