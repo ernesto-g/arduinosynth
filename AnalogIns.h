@@ -2,6 +2,7 @@
 #define ANALOG_STATE_START  1
 #define ANALOG_STATE_WAIT   2
 #define ANALOG_STATE_FINISH 3
+#define ANALOG_STATE_WAIT_CHN_MUX 4
 
 void ain_init(void);
 void ain_state_machine(void);

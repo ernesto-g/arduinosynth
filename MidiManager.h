@@ -10,6 +10,14 @@
 #define MIDI_VOICES_MODE_DUAL 1
 
 
+#define OCTAVE_MINUS_TWO  0
+#define OCTAVE_MINUS_ONE  1
+#define OCTAVE_ZERO       2
+#define OCTAVE_PLUS_ONE   3
+#define OCTAVE_PLUS_TWO   4
+
+
+
 typedef struct S_MidiInfo {
   byte channel;
   byte cmd;

@@ -2,9 +2,11 @@
 #include <Arduino.h>
 #include "Config.h"
 #include "MidiManager.h"
+#include "AnalogIns.h"
 
-const unsigned short NOTES_TABLE_PWM[61] = {953,942,936,926,916,903,893,882,866,850,838,822,810,790,772,753,734,707,685,659,635,611,580,550,512,475,446,405,366,316,270,929,919,909,900,888,873,
-859,844,831,815,796,777,760,738,717,696,670,648,620,590,560,530,493,457,420,382,335,290,245,200};
+const unsigned short NOTES_TABLE_PWM[61+5] = {953,942,936,926,916,903,893,882,866,850,838,822,810,790,772,753,734,707,685,659,635,611,580,550,512,475,446,405,366,316,270,929,919,909,900,888,873,
+859,844,831,815,796,777,760,738,717,696,670,648,620,590,560,530,493,457,420,382,335,290,245,200,160,120,80,40,0};
+// last valid pwm value: 200
 
 MidiInfo midiInfo;
 byte midiStateMachine=MIDI_STATE_IDLE;
@@ -12,6 +14,13 @@ char keysActivatedCounter=0;
 unsigned char voicesMode;
 
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo);
+static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber);
+static unsigned short changeTune(signed int currentTune,unsigned char noteNumber);
+
+static unsigned char currentOctaveVco1;
+static unsigned char currentOctaveVco2;
+static signed int currentTuneVco1;
+static signed int currentTuneVco2;
 
 
 void midi_init(void)
@@ -42,11 +51,21 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
               
               keysActivatedCounter++;
-              unsigned char noteNumberVco1 = pMidiInfo->note;
-              unsigned char noteNumberVco2 = pMidiInfo->note;
+              unsigned char noteNumberVco1;
+              unsigned char noteNumberVco2;
+
+              // change octave
+              noteNumberVco1 = changeOctave(currentOctaveVco1,pMidiInfo->note);
+              noteNumberVco2 = changeOctave(currentOctaveVco2,pMidiInfo->note);
+              //______________
               
-              unsigned short pwmValVco1 = NOTES_TABLE_PWM[noteNumberVco1-36];
-              unsigned short pwmValVco2 = NOTES_TABLE_PWM[noteNumberVco2-36];
+              unsigned short pwmValVco1; //= NOTES_TABLE_PWM[noteNumberVco1-36];
+              unsigned short pwmValVco2; //= NOTES_TABLE_PWM[noteNumberVco2-36];
+
+              // change tune
+              pwmValVco1 = changeTune(currentTuneVco1,noteNumberVco1);
+              pwmValVco2 = changeTune(currentTuneVco2,noteNumberVco2);              
+              //____________
 
               if(voicesMode==MIDI_VOICES_MODE_MONO)
               { 
@@ -67,8 +86,8 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
                 {
                   digitalWrite(PIN_VCO2_SCALE, HIGH);                
                 }
-                OCR1A = pwmValVco1;    
-                OCR1B = pwmValVco2;  
+                OCR1B = pwmValVco1;    
+                OCR1A = pwmValVco2;  
               }
               else
               {
@@ -87,6 +106,19 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               keysActivatedCounter--;
           if(keysActivatedCounter==0)
               digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
+
+          // debug
+          /*
+          int k;
+          for(k=0; k<8;k++){
+            Serial.print("Valor entrada ");
+            Serial.print(k,DEC);
+            Serial.print(": ");
+            uint16_t* values = ain_getValues();
+            Serial.print(values[k],DEC);
+            Serial.print("\r\n");
+          }*/
+
         }
         else
         {
@@ -131,21 +163,53 @@ void midi_stateMachine(byte midiByte)
 
 void midi_setOctaveVco1(byte octave)
 {
-  
+  currentOctaveVco1 = octave;    
 }
 void midi_setOctaveVco2(byte octave)
 {
+    currentOctaveVco2 = octave;
   
 }
 
 void midi_setTuneVco1(signed int tuneValue)
 {
-  
+    currentTuneVco1 = tuneValue;
 }
 void midi_setTuneVco2(signed int tuneValue)
 {
-  
+    currentTuneVco2 = tuneValue;
+}
+
+static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber)
+{
+    switch(currentOctave)
+    {
+        case OCTAVE_MINUS_TWO:
+          if( noteNumber>=(36+24) )
+            noteNumber-=24;
+          break;
+        case OCTAVE_MINUS_ONE:
+          if( noteNumber>=(36+12) )
+            noteNumber-=12;
+          break;                    
+        case OCTAVE_PLUS_ONE:
+          if( noteNumber<=(96-12) )
+            noteNumber+=12;
+          break;
+        case OCTAVE_PLUS_TWO:
+          if( noteNumber<=(96-24) )
+            noteNumber+=24;
+          break;                    
+    }
+    return noteNumber;
 }
 
 
+static unsigned short changeTune(signed int currentTune,unsigned char noteNumber)
+{
+      unsigned char n = noteNumber-36;
+      signed long pwmP5 =  NOTES_TABLE_PWM[n+5];
+      signed long pwm0 =  NOTES_TABLE_PWM[n];
+      return  ((unsigned short)( ( ((signed long)currentTune) * (pwmP5 - pwm0)) / 512 )) + pwm0;      
+}
 

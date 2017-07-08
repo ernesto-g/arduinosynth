@@ -7,6 +7,7 @@ static uint16_t inputsValue[8];
 static uint8_t currentChn;
 static uint8_t state;
 static uint8_t isReady;
+static uint16_t timeoutWaitChannelMux;
 
 void ain_init(void)
 {
@@ -25,8 +26,16 @@ void ain_state_machine(void)
         // set channel
         ADMUX = ADMUX & 0xF0;
         ADMUX = ADMUX | (currentChn & 0x0F);
-        state = ANALOG_STATE_START;
+        state = ANALOG_STATE_WAIT_CHN_MUX;
+        timeoutWaitChannelMux = 10;
         break;  
+      }
+      case ANALOG_STATE_WAIT_CHN_MUX:
+      {
+        timeoutWaitChannelMux--;
+        if(timeoutWaitChannelMux==0)
+          state = ANALOG_STATE_START;
+        break;
       }
       case ANALOG_STATE_START:
       {
