@@ -7,8 +7,11 @@
 #include "MidiManager.h"
 #include "FrontPanel.h"
 
+volatile unsigned int btnPressedCounter; // incremented in lfo interrupt timer
+
 static unsigned char state;
 static unsigned char controlIndex;
+static unsigned char stateButton;
 
 static unsigned char getDiscrete4ValuesFromSwitchSelector(uint16_t analogValue);
 static unsigned char getDiscrete5ValuesFromSwitchSelector(uint16_t analogValue);
@@ -17,7 +20,7 @@ static void setValueToManager(unsigned char controlIndex);
 void frontp_init(void)
 {
     state = FRONTPANEL_STATE_IDLE;
-    
+    stateButton = FRONTPANEL_BTN_STATE_IDLE;    
 }
 
 void frontp_state_machine(void)
@@ -39,6 +42,42 @@ void frontp_state_machine(void)
           controlIndex++;
           if(controlIndex>=8)
             state = FRONTPANEL_STATE_IDLE;
+          break;
+        }
+    }
+
+    switch(stateButton)
+    {
+        case FRONTPANEL_BTN_STATE_IDLE:
+        {
+            if(digitalRead(PIN_BUTTON)==HIGH)
+            {
+                stateButton=FRONTPANEL_BTN_WAIT_RELEASE;
+                btnPressedCounter=0; // this counter is modified in lfo interrupt at 25ms rate
+            }
+            break;
+        }
+        case FRONTPANEL_BTN_WAIT_RELEASE:
+        {
+          if(digitalRead(PIN_BUTTON)==LOW)
+          {
+              stateButton=FRONTPANEL_BTN_END_RELEASE;
+          }
+          break;
+        }
+        case FRONTPANEL_BTN_END_RELEASE:
+        {
+          if(btnPressedCounter>100) // 2500 ms
+          {
+            // valid press
+            midi_buttonPressedLongCallback();
+          }
+          else if(btnPressedCounter>5) // 125 ms
+          {
+            // valid press
+            midi_buttonPressedShortCallback();            
+          }
+          stateButton=FRONTPANEL_BTN_STATE_IDLE;
           break;
         }
     }

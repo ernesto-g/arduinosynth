@@ -313,6 +313,7 @@ static volatile unsigned int lfoCounter=0;
 static volatile unsigned int freqMultiplier;
 
 extern volatile unsigned int repeatCounter;
+extern volatile unsigned int btnPressedCounter;
 static volatile unsigned int repeatCounterMultiplier;
 
 ISR(TIMER0_COMPA_vect)
@@ -349,6 +350,7 @@ ISR(TIMER0_COMPA_vect)
   {
     repeatCounterMultiplier=0;
     repeatCounter++;
+    btnPressedCounter++;
   }
 
   //repeatCounter++;

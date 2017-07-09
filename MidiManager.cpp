@@ -242,6 +242,17 @@ void midi_setLfoSync(unsigned int val)
       lfoIsSynced=1;
 }
 
+void midi_buttonPressedLongCallback(void)
+{
+    Serial.print("Se presiono largo\r\n");
+}
+
+void midi_buttonPressedShortCallback(void)
+{
+    Serial.print("Se presiono corto\r\n");
+  
+}
+
 static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber)
 {
     switch(currentOctave)

@@ -14,6 +14,11 @@
 #define FRONTPANEL_STATE_IDLE       0
 #define FRONTPANEL_STATE_SET_VALUE  1
 
+#define FRONTPANEL_BTN_STATE_IDLE   0
+#define FRONTPANEL_BTN_WAIT_RELEASE 1
+#define FRONTPANEL_BTN_END_RELEASE  2
+
+
 
 void frontp_init(void);
 void frontp_state_machine(void);

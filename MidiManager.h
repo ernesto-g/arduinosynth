@@ -42,4 +42,7 @@ void midi_setTuneVco2(signed int tuneValue);
 void midi_setRepeatValue(unsigned int repeatVal);
 void midi_repeatManager(void);
 void midi_setLfoSync(unsigned int val);
+void midi_buttonPressedLongCallback(void);
+void midi_buttonPressedShortCallback(void);
+
 

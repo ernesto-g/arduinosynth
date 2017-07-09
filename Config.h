@@ -8,6 +8,9 @@ void config_init(void);
 #define PIN_OUTS_DATA      5        
 #define PIN_OUTS_CLK       6
 #define PIN_OUTS_STROBE    4
+
+#define PIN_BUTTON        13
+
    
 
 

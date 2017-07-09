@@ -73,6 +73,8 @@ void config_init(void)
   pinMode(PIN_OUTS_CLK,OUTPUT);
   pinMode(PIN_OUTS_STROBE,OUTPUT);
 
+  pinMode(PIN_BUTTON,INPUT);
+
   //__________
    
  }
