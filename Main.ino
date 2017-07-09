@@ -4,6 +4,7 @@
 #include "AnalogIns.h"
 #include "FrontPanel.h"
 #include "Outs.h"
+#include "SequencerManager.h"
 
 void setup() {
   config_init();
@@ -12,6 +13,7 @@ void setup() {
   lfo_init();
   ain_init();
   frontp_init();
+  seq_init();
 }
 
 
@@ -36,5 +38,6 @@ void loop() {
 
     outs_stateMachine();
 
+    seq_stateMachine();
   }
 }

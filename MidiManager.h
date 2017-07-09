@@ -22,6 +22,10 @@
 #define OUT_MODE3     3
 #define OUT_REPEAT    4
 
+#define MIDI_MODE_MONO_KEYS_BOTH_SIDES  0
+#define MIDI_MODE_MONO_KEYS_HIGH_PRIOR  1
+#define MIDI_MODE_DUAL_KEYS_BOTH_SIDES  2
+#define MIDI_MODE_SECUENCER             3
 
 
 typedef struct S_MidiInfo {
@@ -44,5 +48,7 @@ void midi_repeatManager(void);
 void midi_setLfoSync(unsigned int val);
 void midi_buttonPressedLongCallback(void);
 void midi_buttonPressedShortCallback(void);
+void midi_startNote(unsigned char midiNoteNumber);
+void midi_stopNote(void);
 
 

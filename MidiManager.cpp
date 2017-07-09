@@ -5,6 +5,7 @@
 #include "AnalogIns.h"
 #include "Outs.h"
 #include "Lfo.h"
+#include "SequencerManager.h"
 
 const unsigned short NOTES_TABLE_PWM[61+5] = {953,942,936,926,916,903,893,882,866,850,838,822,810,790,772,753,734,707,685,659,635,611,580,550,512,475,446,405,366,316,270,929,919,909,900,888,873,
 859,844,831,815,796,777,760,738,717,696,670,648,620,590,560,530,493,457,420,382,335,290,245,200,160,120,80,40,0};
@@ -66,6 +67,8 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
 
               if(lfoIsSynced)
                 lfo_reset();
+              if(seq_isRecording())
+                seq_startRecordNote(pMidiInfo->note);
                                             
               keysActivatedCounter++;
               unsigned char noteNumberVco1;
@@ -86,7 +89,7 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               pwmValVco2 = changeTune(currentTuneVco2,noteNumberVco2,&scaleVco2);              
               //____________
 
-              if(voicesMode==MIDI_VOICES_MODE_MONO)
+              //if(voicesMode==MIDI_VOICES_MODE_MONO)
               { 
                 // Single voice mode           
                 if(scaleVco1==0)
@@ -108,11 +111,7 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
                 OCR1B = pwmValVco1;    
                 OCR1A = pwmValVco2;  
               }
-              else
-              {
-                // Two voices mode
-                
-              }
+              
               
               
               digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
@@ -125,6 +124,10 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               keysActivatedCounter--;
           if(keysActivatedCounter==0)
               digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
+
+          if(seq_isRecording())
+            seq_endRecordNote();
+
         }
         else
         {
@@ -164,6 +167,22 @@ void midi_stateMachine(byte midiByte)
       }
   }
   
+}
+
+void midi_startNote(unsigned char midiNoteNumber)
+{
+    MidiInfo mi;
+    mi.cmd = MIDI_CMD_NOTE_ON;
+    mi.note = midiNoteNumber;
+    mi.channel = MIDI_CURRENT_CHANNEL;
+    midi_analizeMidiInfo(&mi);
+}
+void midi_stopNote(void)
+{
+    MidiInfo mi;
+    mi.cmd = MIDI_CMD_NOTE_OFF;
+    mi.channel = MIDI_CURRENT_CHANNEL;
+    midi_analizeMidiInfo(&mi);  
 }
 
 void midi_repeatManager(void)
@@ -223,14 +242,22 @@ void midi_setTuneVco2(signed int tuneValue)
 
 void midi_setRepeatValue(unsigned int repeatVal)
 {
-  if(repeatVal<100)
+  if(voicesMode==MIDI_MODE_SECUENCER)
   {
-      currentRepeatValue=0;  
+    seq_setSpeed((1023-repeatVal)/12);
+    currentRepeatValue=0;
   }
   else
   {
-      repeatVal = 1023 - repeatVal; // invert value
-      currentRepeatValue= (repeatVal+30)/6 ; // currentRepeatValue between 5 and 158 (125ms to 3.9s)
+      if(repeatVal<100)
+      {
+          currentRepeatValue=0;  
+      }
+      else
+      {
+          repeatVal = 1023 - repeatVal; // invert value
+          currentRepeatValue= (repeatVal+30)/6 ; // currentRepeatValue between 5 and 158 (125ms to 3.9s)
+      }
   }
 }
 
@@ -244,13 +271,33 @@ void midi_setLfoSync(unsigned int val)
 
 void midi_buttonPressedLongCallback(void)
 {
-    Serial.print("Se presiono largo\r\n");
+    if(voicesMode==MIDI_MODE_SECUENCER)
+    {
+        if(seq_isRecording()==0)
+        {
+          // start recording mode
+          seq_startRecord();
+        }
+        else
+        {
+          // play mode
+          seq_startPlay();
+        }
+    }
 }
 
 void midi_buttonPressedShortCallback(void)
-{
-    Serial.print("Se presiono corto\r\n");
-  
+{    
+    voicesMode++;
+    if(voicesMode>=4)
+      voicesMode=0;
+
+    showMode();
+
+    if(voicesMode==MIDI_MODE_SECUENCER)
+      seq_startPlay();
+    else
+      seq_stopPlay();
 }
 
 static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber)
@@ -311,16 +358,16 @@ static void showMode(void)
 
     switch(voicesMode)
     {
-      case 0:
+      case MIDI_MODE_MONO_KEYS_BOTH_SIDES:
         outs_set(OUT_MODE0,1);
         break;
-      case 1:
+      case MIDI_MODE_MONO_KEYS_HIGH_PRIOR:
         outs_set(OUT_MODE1,1);
         break;
-      case 2:
+      case MIDI_MODE_DUAL_KEYS_BOTH_SIDES:
         outs_set(OUT_MODE2,1);
         break;
-      case 3:
+      case MIDI_MODE_SECUENCER:
         outs_set(OUT_MODE3,1);
         break;
     }  
