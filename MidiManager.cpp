@@ -66,7 +66,7 @@ void midi_init(void)
 /*
   MODE 0 : No key priority: last key pressed is valid
   MODE 1 : Lower key priority: key is valid if it has lower freq than last one
-  MODE 2 : 2 voices mode:  First key pressed is played on VCO1. other keys are played on VCO2
+  MODE 2 : 2 voices mode:  The lowest key is played on VCO2. The highest key is played on VCO1
   MODE 3 : Sequence mode. Record and play sequence.   
 */
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
