@@ -59,7 +59,7 @@ void seq_stopPlay(void)
 {
     if(state!=SEQ_STATE_IDLE)
     {
-      midi_stopNote();
+      midi_stopNote(0xFF);
       outs_set(OUT_REPEAT,0);      
       state = SEQ_STATE_IDLE;
     }  
@@ -111,7 +111,7 @@ void seq_stateMachine(void)
       {
         if(sequenceNoteDurationCounter>=sequence[playIndex].duration)
         {
-            midi_stopNote();
+            midi_stopNote(sequence[playIndex].midiNoteNumber);
             outs_set(OUT_REPEAT,0);      
             sequenceNoteDurationCounter=0;
             state = SEQ_STATE_WAIT_SILENCE_DURATION;

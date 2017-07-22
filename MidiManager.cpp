@@ -128,9 +128,11 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
                   setVCOs(previousNote);
               }
             }
+            
             if(seq_isRecording())
               seq_endRecordNote();
           }
+
         }
         else
         {
@@ -180,10 +182,11 @@ void midi_startNote(unsigned char midiNoteNumber)
     mi.channel = MIDI_CURRENT_CHANNEL;
     midi_analizeMidiInfo(&mi);
 }
-void midi_stopNote(void)
+void midi_stopNote(unsigned char midiNoteNumber)
 {
     MidiInfo mi;
     mi.cmd = MIDI_CMD_NOTE_OFF;
+    mi.note = midiNoteNumber;
     mi.channel = MIDI_CURRENT_CHANNEL;
     midi_analizeMidiInfo(&mi);  
 }
@@ -307,7 +310,13 @@ void midi_buttonPressedShortCallback(void)
     if(voicesMode==MIDI_MODE_SECUENCER)
       seq_startPlay();
     else
+    {
+        byte i;
+        for(i=0; i<KEYS_PRESSED_LEN; i++)
+          keysPressed[i].flagFree=1;
+        digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0  
       seq_stopPlay();
+    }
 }
 
 static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber)

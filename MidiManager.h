@@ -55,6 +55,5 @@ void midi_setLfoSync(unsigned int val);
 void midi_buttonPressedLongCallback(void);
 void midi_buttonPressedShortCallback(void);
 void midi_startNote(unsigned char midiNoteNumber);
-void midi_stopNote(void);
-
+void midi_stopNote(unsigned char midiNoteNumber);
 
