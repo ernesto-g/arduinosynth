@@ -33,7 +33,7 @@ void frontp_state_machine(void)
           {
             controlIndex=0;
             state = FRONTPANEL_STATE_SET_VALUE;
-          }
+          }            
           break;
         }
         case FRONTPANEL_STATE_SET_VALUE:
@@ -41,7 +41,18 @@ void frontp_state_machine(void)
           setValueToManager(controlIndex);
           controlIndex++;
           if(controlIndex>=8)
-            state = FRONTPANEL_STATE_IDLE;
+            state = FRONTPANEL_STATE_UPDATE_GLISS;
+          break;
+        }
+        case FRONTPANEL_STATE_UPDATE_GLISS:
+        {
+          // update gliss switch value
+          if(digitalRead(PIN_GLISS_SWITCH)==HIGH)
+            midi_setGlissOn(1);
+          else
+            midi_setGlissOn(0);
+          //__________________________  
+          state = FRONTPANEL_STATE_IDLE;
           break;
         }
     }

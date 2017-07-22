@@ -74,6 +74,7 @@ void config_init(void)
   pinMode(PIN_OUTS_STROBE,OUTPUT);
 
   pinMode(PIN_BUTTON,INPUT);
+  pinMode(PIN_GLISS_SWITCH,INPUT);
 
   //__________
    

@@ -10,6 +10,7 @@ void config_init(void);
 #define PIN_OUTS_STROBE    4
 
 #define PIN_BUTTON        13
+#define PIN_GLISS_SWITCH  2
 
    
 

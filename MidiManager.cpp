@@ -38,7 +38,15 @@ static unsigned char repeatRunning;
 static unsigned char lfoIsSynced;
 static unsigned char repeatKeyIndex;
 
+static unsigned char isGlissOn;
+static unsigned int glissSpeed;
+static unsigned char glissFinalKey;
+static unsigned char glissStartKey;
+static unsigned int glissState;
+
+
 volatile unsigned int repeatCounter; // incremented in lfo interrupt
+volatile unsigned int glissCounter; // incremented in lfo interrupt
 
 static KeyPressedInfo keysPressed[KEYS_PRESSED_LEN];
 
@@ -63,7 +71,11 @@ void midi_init(void)
   repeatCounter = 0;
   repeatRunning=0;
   lfoIsSynced = 0;
-
+  isGlissOn = 0;
+  glissSpeed = 0;
+  glissFinalKey = 0xFF;
+  glissStartKey = 0xFF;
+  glissState = GLISS_STATE_IDLE;
   showMode();
 }
 
@@ -95,6 +107,14 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
              
               if(repeatRunning==1)
                 return; // repeat is playing, save key to repeat later, but ignore current key hit
+
+              if(isGlissOn==1)
+              {
+                  glissFinalKey = pMidiInfo->note;
+                  if(seq_isRecording())
+                    seq_startRecordNote(pMidiInfo->note);
+                  return; // gliss switch is on, dont play the note now
+              }
 
               digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
               digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
@@ -191,6 +211,76 @@ void midi_stopNote(unsigned char midiNoteNumber)
     midi_analizeMidiInfo(&mi);  
 }
 
+void midi_glissManager(void)
+{
+    if(isGlissOn==0)
+    {
+        glissFinalKey=0xFF;
+        glissStartKey=0xFF;
+        return;
+    }
+
+    switch(glissState)
+    {
+        case GLISS_STATE_IDLE:
+        {
+          if(glissFinalKey!=glissStartKey)
+          {
+              // Gliss is activated
+              glissState = GLISS_STATE_CHANGE_NOTE; //glissSpeed 
+          }          
+          break;
+        }
+        case GLISS_STATE_CHANGE_NOTE:
+        {
+          if(glissFinalKey!=glissStartKey)
+          {
+              // first key case
+              if(glissStartKey==0xFF)
+              {
+                glissStartKey = glissFinalKey;
+              }
+              else
+              {
+                // second key case
+                if(glissFinalKey>glissStartKey)
+                    glissStartKey++;                  
+                else
+                    glissStartKey--;
+              }
+              // play note
+              glissCounter=0;
+              digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
+              digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
+              if(lfoIsSynced)
+                    lfo_reset();
+              setVCOs(glissStartKey);
+              outs_set(OUT_REPEAT,1);
+              glissState = GLISS_STATE_WAIT_NOTE_DURATION;
+          }
+          else
+            glissState = GLISS_STATE_IDLE;
+          break;  
+        }
+        case GLISS_STATE_WAIT_NOTE_DURATION:
+        {
+            if(glissCounter>=glissSpeed)
+            {
+              digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
+              outs_set(OUT_REPEAT,0);      
+              repeatRunning=0;
+              if(thereAreNoKeysPressed())
+                  digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0                        
+
+              glissState = GLISS_STATE_CHANGE_NOTE;
+            }
+          break;
+        }
+        
+    }
+
+}
+
 void midi_repeatManager(void)
 {
   if(currentRepeatValue>0)
@@ -262,6 +352,13 @@ void midi_setRepeatValue(unsigned int repeatVal)
   }
   else
   {
+      if(isGlissOn)
+      {
+        glissSpeed = (1023-repeatVal)/12;  
+        currentRepeatValue=0;
+        return; // repeat is disabled if gliss mode is ON
+      }
+      
       if(repeatVal<100)
       {
           currentRepeatValue=0;  
@@ -280,6 +377,11 @@ void midi_setLfoSync(unsigned int val)
       lfoIsSynced=0;
     else
       lfoIsSynced=1;
+}
+
+void midi_setGlissOn(unsigned char val)
+{
+    isGlissOn = val;
 }
 
 void midi_buttonPressedLongCallback(void)

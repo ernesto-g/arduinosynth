@@ -6,8 +6,10 @@
 #define MIDI_STATE_RVC_DATA1  1
 #define MIDI_STATE_RVC_DATA2  2
 
-//#define MIDI_VOICES_MODE_MONO 0
-//#define MIDI_VOICES_MODE_DUAL 1
+
+#define GLISS_STATE_IDLE                0
+#define GLISS_STATE_CHANGE_NOTE         1
+#define GLISS_STATE_WAIT_NOTE_DURATION  2
 
 
 #define OCTAVE_MINUS_TWO  0
@@ -51,9 +53,12 @@ void midi_setTuneVco1(signed int tuneValue);
 void midi_setTuneVco2(signed int tuneValue);
 void midi_setRepeatValue(unsigned int repeatVal);
 void midi_repeatManager(void);
+void midi_glissManager(void);
 void midi_setLfoSync(unsigned int val);
 void midi_buttonPressedLongCallback(void);
 void midi_buttonPressedShortCallback(void);
 void midi_startNote(unsigned char midiNoteNumber);
 void midi_stopNote(unsigned char midiNoteNumber);
+void midi_setGlissOn(unsigned char val);
+
 

@@ -35,6 +35,7 @@ void loop() {
     frontp_state_machine();
 
     midi_repeatManager();
+    midi_glissManager();
 
     outs_stateMachine();
 

@@ -316,6 +316,7 @@ extern volatile unsigned int repeatCounter;
 extern volatile unsigned int btnPressedCounter;
 extern volatile unsigned int sequenceNoteDurationCounter;
 static volatile unsigned int repeatCounterMultiplier;
+extern volatile unsigned int glissCounter;
 
 ISR(TIMER0_COMPA_vect)
 {
@@ -355,7 +356,7 @@ ISR(TIMER0_COMPA_vect)
     sequenceNoteDurationCounter++;
   }
 
-  //repeatCounter++;
+  glissCounter++;
   
 }
 
