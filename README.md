@@ -12,8 +12,8 @@ Synth features:
     - PWM 10% to 90% for square waveform
   - Two analog ADSRs with attack, decay, sustain and release controls
   - One digital 8 bit LFO with:
-    -0.5Hz to 30Hz tune control.
-    -Sine, triangle, exponential and square waveforms
+    - 0.5Hz to 30Hz tune control.
+    - Sine, triangle, exponential and square waveforms
   - One analog filter with:
 	- Three modes: High pass, Low pass and Band pass. 
 	- Cutoff freq and resonance controls.
