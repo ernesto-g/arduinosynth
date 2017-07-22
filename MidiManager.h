@@ -6,8 +6,8 @@
 #define MIDI_STATE_RVC_DATA1  1
 #define MIDI_STATE_RVC_DATA2  2
 
-#define MIDI_VOICES_MODE_MONO 0
-#define MIDI_VOICES_MODE_DUAL 1
+//#define MIDI_VOICES_MODE_MONO 0
+//#define MIDI_VOICES_MODE_DUAL 1
 
 
 #define OCTAVE_MINUS_TWO  0
@@ -23,7 +23,7 @@
 #define OUT_REPEAT    4
 
 #define MIDI_MODE_MONO_KEYS_BOTH_SIDES  0
-#define MIDI_MODE_MONO_KEYS_HIGH_PRIOR  1
+#define MIDI_MODE_MONO_KEYS_LOW_PRIOR   1
 #define MIDI_MODE_DUAL_KEYS_BOTH_SIDES  2
 #define MIDI_MODE_SECUENCER             3
 
@@ -34,6 +34,12 @@ typedef struct S_MidiInfo {
   byte note;
   byte vel;
 }MidiInfo;
+
+typedef struct S_KeyPressedInfo {
+  byte note;
+  byte flagFree; 
+}KeyPressedInfo;
+#define KEYS_PRESSED_LEN    10
 
 
 void midi_stateMachine(byte midiByte);

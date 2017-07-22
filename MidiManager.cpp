@@ -13,14 +13,19 @@ const unsigned short NOTES_TABLE_PWM[61+5] = {953,942,936,926,916,903,893,882,86
 
 MidiInfo midiInfo;
 byte midiStateMachine=MIDI_STATE_IDLE;
-char keysActivatedCounter=0;
 unsigned char voicesMode;
 
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo);
 static unsigned char changeOctave(unsigned char currentOctave, unsigned char noteNumber);
 static unsigned short changeTune(signed int currentTune,unsigned char noteNumber,unsigned char* pScale);
 static void showMode(void);
-
+static byte saveKey(byte note);
+static byte getIndexOfPressedKey(byte note);
+static byte deleteKey(byte note);
+static byte thereAreNoKeysPressed(void);
+static byte getTheLowestKeyPressed(void);
+static byte getTheHighestKeyPressed(void);
+static void setVCOs(byte note);
 
 static unsigned char currentOctaveVco1;
 static unsigned char currentOctaveVco2;
@@ -32,12 +37,17 @@ static unsigned char lfoIsSynced;
 
 volatile unsigned int repeatCounter; // incremented in lfo interrupt
 
+static KeyPressedInfo keysPressed[KEYS_PRESSED_LEN];
+
 void midi_init(void)
 {
+  byte i;
   midiStateMachine=MIDI_STATE_IDLE;
-  keysActivatedCounter=0;  
 
-  voicesMode = MIDI_VOICES_MODE_MONO;
+  for(i=0; i<KEYS_PRESSED_LEN; i++)
+    keysPressed[i].flagFree=1;
+
+  voicesMode = MIDI_MODE_MONO_KEYS_BOTH_SIDES;
   
   digitalWrite(PIN_VCO1_SCALE, HIGH);
   digitalWrite(PIN_VCO2_SCALE, HIGH);
@@ -53,6 +63,12 @@ void midi_init(void)
   showMode();
 }
 
+/*
+  MODE 0 : No key priority: last key pressed is valid
+  MODE 1 : Lower key priority: key is valid if it has lower freq than last one
+  MODE 2 : 2 voices mode:  First key pressed is played on VCO1. other keys are played on VCO2
+  MODE 3 : Sequence mode. Record and play sequence.   
+*/
 void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
 {
     if(pMidiInfo->channel==MIDI_CURRENT_CHANNEL)
@@ -61,7 +77,19 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
         {
             // NOTE ON 
             if(pMidiInfo->note>=36 && pMidiInfo->note<=96)
-            {
+            { 
+
+              if(voicesMode==MIDI_MODE_MONO_KEYS_LOW_PRIOR)
+              {
+                  if(pMidiInfo->note > getTheLowestKeyPressed())
+                  {
+                    saveKey(pMidiInfo->note);
+                    return; // ignore key                         
+                  }
+              }
+              saveKey(pMidiInfo->note);
+             
+
               digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
               digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
 
@@ -69,50 +97,8 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
                 lfo_reset();
               if(seq_isRecording())
                 seq_startRecordNote(pMidiInfo->note);
-                                            
-              keysActivatedCounter++;
-              unsigned char noteNumberVco1;
-              unsigned char noteNumberVco2;
 
-              // change octave
-              noteNumberVco1 = changeOctave(currentOctaveVco1,pMidiInfo->note);
-              noteNumberVco2 = changeOctave(currentOctaveVco2,pMidiInfo->note);
-              //______________
-              
-              unsigned short pwmValVco1;
-              unsigned short pwmValVco2;
-              unsigned char scaleVco1;
-              unsigned char scaleVco2;              
-
-              // change tune
-              pwmValVco1 = changeTune(currentTuneVco1,noteNumberVco1,&scaleVco1);
-              pwmValVco2 = changeTune(currentTuneVco2,noteNumberVco2,&scaleVco2);              
-              //____________
-
-              //if(voicesMode==MIDI_VOICES_MODE_MONO)
-              { 
-                // Single voice mode           
-                if(scaleVco1==0)
-                {
-                  digitalWrite(PIN_VCO1_SCALE, LOW);
-                }
-                else
-                {
-                  digitalWrite(PIN_VCO1_SCALE, HIGH);
-                }
-                if(scaleVco2==0)                
-                {
-                  digitalWrite(PIN_VCO2_SCALE, LOW);
-                }
-                else
-                {
-                  digitalWrite(PIN_VCO2_SCALE, HIGH);                
-                }
-                OCR1B = pwmValVco1;    
-                OCR1A = pwmValVco2;  
-              }
-              
-              
+              setVCOs(pMidiInfo->note);
               
               digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
             }
@@ -120,14 +106,25 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
         else if(pMidiInfo->cmd==MIDI_CMD_NOTE_OFF)
         {
           // NOTE OFF
-          if(keysActivatedCounter>0)            
-              keysActivatedCounter--;
-          if(keysActivatedCounter==0)
-              digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
-
-          if(seq_isRecording())
-            seq_endRecordNote();
-
+          if(deleteKey(pMidiInfo->note))
+          {
+            if(thereAreNoKeysPressed())
+            {
+                digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
+            }
+            else
+            {
+              if(voicesMode==MIDI_MODE_MONO_KEYS_LOW_PRIOR)
+              {
+                // a key was released. keep playing previous lower key
+                byte previousNote = getTheLowestKeyPressed();
+                if(previousNote!=0xFF)
+                  setVCOs(previousNote);
+              }
+            }
+            if(seq_isRecording())
+              seq_endRecordNote();
+          }
         }
         else
         {
@@ -187,6 +184,7 @@ void midi_stopNote(void)
 
 void midi_repeatManager(void)
 {
+  /*
   if(currentRepeatValue>0)
   {    
     if(repeatCounter>=currentRepeatValue)
@@ -217,7 +215,7 @@ void midi_repeatManager(void)
         if(keysActivatedCounter==0)
             digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0    
   }
-
+  */
 }
 
 
@@ -361,7 +359,7 @@ static void showMode(void)
       case MIDI_MODE_MONO_KEYS_BOTH_SIDES:
         outs_set(OUT_MODE0,1);
         break;
-      case MIDI_MODE_MONO_KEYS_HIGH_PRIOR:
+      case MIDI_MODE_MONO_KEYS_LOW_PRIOR:
         outs_set(OUT_MODE1,1);
         break;
       case MIDI_MODE_DUAL_KEYS_BOTH_SIDES:
@@ -371,5 +369,140 @@ static void showMode(void)
         outs_set(OUT_MODE3,1);
         break;
     }  
+}
+
+
+static byte saveKey(byte note)
+{
+  byte i;
+  for(i=0; i<KEYS_PRESSED_LEN; i++)
+  {
+    if(keysPressed[i].flagFree==1)
+    {
+        keysPressed[i].flagFree=0;
+        keysPressed[i].note = note;
+        return 0;
+    }
+  }
+  return 1; // no more space
+}
+static byte getIndexOfPressedKey(byte note)
+{
+  byte i;
+  for(i=0; i<KEYS_PRESSED_LEN; i++)
+  {
+    if(keysPressed[i].flagFree==0)
+    {
+        if(keysPressed[i].note == note)
+          return i;
+    }
+  }
+  return 0xFF; 
+}
+static byte deleteKey(byte note)
+{
+    byte index = getIndexOfPressedKey(note);
+    if(index<KEYS_PRESSED_LEN)
+    {
+      keysPressed[index].flagFree=1;
+      return 1;
+    }
+    return 0;
+}
+
+static byte thereAreNoKeysPressed(void)
+{
+  byte i;
+  for(i=0; i<KEYS_PRESSED_LEN; i++)
+  {
+    if(keysPressed[i].flagFree==0)
+    {
+      return 0;
+    }
+  }
+  return 1; 
+}
+
+static byte getTheLowestKeyPressed(void)
+{
+    byte i;
+    byte mi = 0xFF;
+    for(i=0; i<KEYS_PRESSED_LEN; i++)
+    {
+      if(keysPressed[i].flagFree==0)
+      {
+          if(keysPressed[i].note<mi)
+            mi = keysPressed[i].note;
+      }
+    }
+    return mi;
+}
+
+static byte getTheHighestKeyPressed(void)
+{
+    byte i;
+    byte max = 0x00;
+    for(i=0; i<KEYS_PRESSED_LEN; i++)
+    {
+      if(keysPressed[i].flagFree==0)
+      {
+          if(keysPressed[i].note>max)
+            max = keysPressed[i].note;
+      }
+    }
+    return max;
+}
+
+
+static void setVCOs(byte note)
+{
+      unsigned char noteNumberVco1;
+      unsigned char noteNumberVco2;
+      unsigned short pwmValVco1;
+      unsigned short pwmValVco2;
+      unsigned char scaleVco1;
+      unsigned char scaleVco2;              
+      unsigned char note1=note;
+      unsigned char note2=note;
+      
+      if(voicesMode==MIDI_MODE_DUAL_KEYS_BOTH_SIDES)
+      {
+          note1 = getTheHighestKeyPressed();
+          if(note1==0x00)
+            note1=note;
+            
+          note2 = getTheLowestKeyPressed();
+          if(note2==0xFF)
+              note2=note;  
+      }  
+
+      // change octave
+      noteNumberVco1 = changeOctave(currentOctaveVco1,note1);
+      noteNumberVco2 = changeOctave(currentOctaveVco2,note2);
+      //______________
+      
+      // change tune
+      pwmValVco1 = changeTune(currentTuneVco1,noteNumberVco1,&scaleVco1);
+      pwmValVco2 = changeTune(currentTuneVco2,noteNumberVco2,&scaleVco2);              
+      //____________
+
+      if(scaleVco1==0)
+      {
+        digitalWrite(PIN_VCO1_SCALE, LOW);
+      }
+      else
+      {
+        digitalWrite(PIN_VCO1_SCALE, HIGH);
+      }
+      if(scaleVco2==0)                
+      {
+        digitalWrite(PIN_VCO2_SCALE, LOW);
+      }
+      else
+      {
+        digitalWrite(PIN_VCO2_SCALE, HIGH);                
+      }
+      OCR1B = pwmValVco1;    
+      OCR1A = pwmValVco2;          
 }
 
