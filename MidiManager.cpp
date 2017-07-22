@@ -26,6 +26,8 @@ static byte thereAreNoKeysPressed(void);
 static byte getTheLowestKeyPressed(void);
 static byte getTheHighestKeyPressed(void);
 static void setVCOs(byte note);
+static byte getNextKeyForRepeat(void);
+
 
 static unsigned char currentOctaveVco1;
 static unsigned char currentOctaveVco2;
@@ -34,6 +36,7 @@ static signed int currentTuneVco2;
 static unsigned int currentRepeatValue;
 static unsigned char repeatRunning;
 static unsigned char lfoIsSynced;
+static unsigned char repeatKeyIndex;
 
 volatile unsigned int repeatCounter; // incremented in lfo interrupt
 
@@ -47,6 +50,7 @@ void midi_init(void)
   for(i=0; i<KEYS_PRESSED_LEN; i++)
     keysPressed[i].flagFree=1;
 
+  repeatKeyIndex=0;
   voicesMode = MIDI_MODE_MONO_KEYS_BOTH_SIDES;
   
   digitalWrite(PIN_VCO1_SCALE, HIGH);
@@ -89,6 +93,8 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               }
               saveKey(pMidiInfo->note);
              
+              if(repeatRunning==1)
+                return; // repeat is playing, save key to repeat later, but ignore current key hit
 
               digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
               digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
@@ -184,14 +190,20 @@ void midi_stopNote(void)
 
 void midi_repeatManager(void)
 {
-  /*
   if(currentRepeatValue>0)
   {    
     if(repeatCounter>=currentRepeatValue)
     {
         repeatCounter=0;
-        digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
-        digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
+        byte note2Play = getNextKeyForRepeat();
+        if(note2Play!=0xFF)
+        {
+          digitalWrite(PIN_TRIGGER_SIGNAL,HIGH); // trigger=1
+          digitalWrite(PIN_GATE_SIGNAL,LOW); // gate=1
+          if(lfoIsSynced)
+                lfo_reset();
+          setVCOs(note2Play);
+        }
         outs_set(OUT_REPEAT,1);
         repeatRunning=1;
     }
@@ -202,7 +214,7 @@ void midi_repeatManager(void)
         digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
         outs_set(OUT_REPEAT,0);      
         repeatRunning=0;
-        if(keysActivatedCounter==0)
+        if(thereAreNoKeysPressed())
             digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0
       }
     }
@@ -212,10 +224,10 @@ void midi_repeatManager(void)
         digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
         outs_set(OUT_REPEAT,0);      
         repeatRunning=0;
-        if(keysActivatedCounter==0)
+        if(thereAreNoKeysPressed())
             digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0    
   }
-  */
+  
 }
 
 
@@ -254,7 +266,7 @@ void midi_setRepeatValue(unsigned int repeatVal)
       else
       {
           repeatVal = 1023 - repeatVal; // invert value
-          currentRepeatValue= (repeatVal+30)/6 ; // currentRepeatValue between 5 and 158 (125ms to 3.9s)
+          currentRepeatValue= (repeatVal+30)/12 ; // currentRepeatValue between 2 and 158 (50ms to 1.9s)
       }
   }
 }
@@ -452,6 +464,41 @@ static byte getTheHighestKeyPressed(void)
     }
     return max;
 }
+
+static byte getNextKeyForRepeat(void)
+{
+    byte i;
+    byte found=0;
+    byte ret=0xFF;
+    for(i=repeatKeyIndex; i<KEYS_PRESSED_LEN; i++)
+    {
+        if(keysPressed[i].flagFree==0)
+        {
+          ret = keysPressed[i].note;
+          found = 1;
+          break;
+        }
+    }
+    if(found==0)
+    {
+        repeatKeyIndex = 0;
+        for(i=repeatKeyIndex; i<KEYS_PRESSED_LEN; i++)
+        {
+            if(keysPressed[i].flagFree==0)
+            {
+              ret = keysPressed[i].note;
+              break;
+            }
+        }        
+    }
+    
+    repeatKeyIndex = i+1;
+    if(repeatKeyIndex>=KEYS_PRESSED_LEN)
+      repeatKeyIndex = 0;
+
+   return ret;
+}
+
 
 
 static void setVCOs(byte note)
