@@ -2,6 +2,8 @@
 
 Analog Synth with MIDI input controlled by an arduino microcontroller. Some controls are connected to arduino and some are connected to the analog circuit.
 
+![alt text](https://raw.githubusercontent.com/ernesto-g/arduinosynth/master/Pictures/synth1.jpg)
+
 Synth features:
   - MIDI input
   - 61 key support (36 to 96)
