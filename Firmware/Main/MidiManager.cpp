@@ -52,6 +52,7 @@ static signed int currentTuneVco1;
 static signed int currentTuneVco2;
 static unsigned int currentRepeatValue;
 static unsigned char repeatRunning;
+static unsigned char repeatOn;
 static unsigned char lfoIsSynced;
 static unsigned char repeatKeyIndex;
 
@@ -87,6 +88,7 @@ void midi_init(void)
 
   repeatCounter = 0;
   repeatRunning=0;
+  repeatOn=0;
   lfoIsSynced = 0;
   isGlissOn = 0;
   glissSpeed = 0;
@@ -122,7 +124,7 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               }
               saveKey(pMidiInfo->note);
              
-              if(repeatRunning==1)
+              if(repeatOn==1)
                 return; // repeat is playing, save key to repeat later, but ignore current key hit
 
               if(isGlissOn==1)
@@ -301,7 +303,8 @@ void midi_glissManager(void)
 void midi_repeatManager(void)
 {
   if(currentRepeatValue>0)
-  {    
+  {
+    repeatOn=1;    
     if(repeatCounter>=currentRepeatValue)
     {
         repeatCounter=0;
@@ -329,15 +332,18 @@ void midi_repeatManager(void)
       }
     }
   }
-  else if(repeatRunning==1)
+  else 
   {
+    repeatOn=0;
+    if(repeatRunning==1)
+    {
         digitalWrite(PIN_TRIGGER_SIGNAL,LOW); // trigger=0
         outs_set(OUT_REPEAT,0);      
         repeatRunning=0;
         if(thereAreNoKeysPressed())
             digitalWrite(PIN_GATE_SIGNAL,HIGH); // gate=0    
+    }
   }
-  
 }
 
 
