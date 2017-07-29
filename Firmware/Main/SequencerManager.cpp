@@ -111,7 +111,7 @@ void seq_stateMachine(void)
       }
       case SEQ_STATE_PLAY:
       {
-        outs_set(OUT_MODE3,1);          
+        outs_set(OUT_MODE3,0);          
         playIndex=0;
         state = SEQ_STATE_PLAYING;
         break;

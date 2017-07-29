@@ -122,6 +122,14 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
                     return; // ignore key                         
                   }
               }
+              else if(voicesMode==MIDI_MODE_MONO_KEYS_HIGH_PRIOR)
+              {
+                  if(pMidiInfo->note < getTheHighestKeyPressed())
+                  {
+                    saveKey(pMidiInfo->note);
+                    return; // ignore key                         
+                  }
+              }
               saveKey(pMidiInfo->note);
              
               if(repeatOn==1)
@@ -163,6 +171,13 @@ void midi_analizeMidiInfo(MidiInfo * pMidiInfo)
               {
                 // a key was released. keep playing previous lower key
                 byte previousNote = getTheLowestKeyPressed();
+                if(previousNote!=0xFF)
+                  setVCOs(previousNote);
+              }
+              else if(voicesMode==MIDI_MODE_MONO_KEYS_HIGH_PRIOR)
+              {
+                // a key was released. keep playing previous highest key
+                byte previousNote = getTheHighestKeyPressed();
                 if(previousNote!=0xFF)
                   setVCOs(previousNote);
               }
@@ -427,7 +442,7 @@ void midi_buttonPressedLongCallback(void)
 void midi_buttonPressedShortCallback(void)
 {    
     voicesMode++;
-    if(voicesMode>=4)
+    if(voicesMode>=MIDI_MODES_LEN)
       voicesMode=0;
 
     showMode();
@@ -508,11 +523,14 @@ static void showMode(void)
       case MIDI_MODE_MONO_KEYS_LOW_PRIOR:
         outs_set(OUT_MODE1,1);
         break;
-      case MIDI_MODE_DUAL_KEYS_BOTH_SIDES:
+      case MIDI_MODE_MONO_KEYS_HIGH_PRIOR:
         outs_set(OUT_MODE2,1);
         break;
-      case MIDI_MODE_SECUENCER:
+      case MIDI_MODE_DUAL_KEYS_BOTH_SIDES:
         outs_set(OUT_MODE3,1);
+        break;
+      case MIDI_MODE_SECUENCER:
+        // all leds off
         break;
     }  
 }

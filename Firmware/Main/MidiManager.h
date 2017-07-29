@@ -43,8 +43,11 @@
 
 #define MIDI_MODE_MONO_KEYS_BOTH_SIDES  0
 #define MIDI_MODE_MONO_KEYS_LOW_PRIOR   1
-#define MIDI_MODE_DUAL_KEYS_BOTH_SIDES  2
-#define MIDI_MODE_SECUENCER             3
+#define MIDI_MODE_MONO_KEYS_HIGH_PRIOR  2
+#define MIDI_MODE_DUAL_KEYS_BOTH_SIDES  3
+#define MIDI_MODE_SECUENCER             4
+
+#define MIDI_MODES_LEN                  5
 
 
 typedef struct S_MidiInfo {
