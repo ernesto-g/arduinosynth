@@ -25,11 +25,12 @@ Synth features:
       - LFO sync switch: Sync LFO beginning cicle with key hit.
       - Glissando switch: Play all notes from previous note to current note.
       - Arpeggiator: Repeat until 10 keys pressed at the same time with speed control.
-      - Four modes for key priority: 
-        - MODE 0:Monophonic.Last key pressed priority.
-        - MODE 1:Monophonic.Lowest key pressed priority.
-        - MODE 2:Polyphonic (dual). Lowest and highest keys pressed priority.
-        - MODE 3:Sequencer mode.Record and play until 64 keys.
+      - Five modes for key priority: 
+        - MODE 0:Monophonic. Last key pressed priority.
+        - MODE 1:Monophonic. Lowest key pressed priority.
+        - MODE 2:Monophonic. Highest key pressed priority.
+        - MODE 3:Polyphonic (dual). Lowest and highest keys pressed priority.
+        - MODE 4:(All leds off in panel) Sequencer mode. Record and play until 64 keys.
 
 This project contains:
   - Arduino nano Firmware
